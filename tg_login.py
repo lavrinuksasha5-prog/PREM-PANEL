@@ -217,9 +217,16 @@ def login(ws, account_id):
                 pwd = find_password(account_id, phone)
                 print("вход: пароль найден:", bool(pwd), flush=True)
                 if pwd:
-                    if clear_and_type(page, "input[type=password]", pwd, 0.05, 0.1):
-                        press_next(page)
-                        page.wait_for_timeout(6000)
+                    done = False
+                    for sel in ["#sign-in-password", "input[type=password]", "input[name=password]"]:
+                        if clear_and_type(page, sel, pwd, 0.05, 0.1):
+                            print("вход: пароль введён в", sel, flush=True)
+                            press_next(page)
+                            page.wait_for_timeout(6000)
+                            done = True
+                            break
+                    if not done:
+                        print("вход: поле пароля не найдено", flush=True)
                 else:
                     print("вход: ВПИШИ ПАРОЛЬ В ОКНЕ, жду до 3 минут", flush=True)
                     w = 0
@@ -262,3 +269,4 @@ def login(ws, account_id):
         except Exception as exc:
             print("вход: бот", exc.__class__.__name__, flush=True)
         return True
+

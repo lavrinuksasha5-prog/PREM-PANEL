@@ -52,12 +52,15 @@ async def phone_of(account_id):
         await client.disconnect()
 
 
-async def wait_code(account_id, timeout=200):
+async def wait_code(account_id, timeout=200, since=None):
     client = await build_client(account_id)
     try:
         me = await client.get_me()
         print("аккаунт:", me.first_name if me else "?", "| +" + (me.phone or ""), flush=True)
-        fresh_after = datetime.now(timezone.utc) - timedelta(seconds=20)
+        if since:
+            fresh_after = datetime.fromtimestamp(since, timezone.utc) - timedelta(seconds=3)
+        else:
+            fresh_after = datetime.now(timezone.utc) - timedelta(seconds=20)
         waited = 0
         seen = set()
         while waited < timeout:
@@ -83,3 +86,4 @@ async def wait_code(account_id, timeout=200):
         return ""
     finally:
         await client.disconnect()
+
