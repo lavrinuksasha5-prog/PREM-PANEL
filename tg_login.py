@@ -150,16 +150,21 @@ def login(ws, account_id):
             print("вход: попытка", attempt, flush=True)
 
             try:
-                page.goto("https://web.telegram.org/a/", wait_until="domcontentloaded", timeout=45000)
+                url = "https://web.telegram.org/a/" if attempt == 1 else "https://web.telegram.org/k/"
+                page.goto(url, wait_until="domcontentloaded", timeout=45000)
             except Exception as exc:
                 print("вход: goto", exc.__class__.__name__, flush=True)
 
             if not wait_any(page, ["#sign-in-phone-number"], 7000):
                 try:
-                    page.get_by_text("LOG IN BY PHONE NUMBER", exact=False).first.click(timeout=10000)
-                    print("вход: клик по номеру", flush=True)
-                except Exception:
-                    pass
+                    page.evaluate("""() => {
+                        const els = [...document.querySelectorAll('button,a,div')];
+                        const el = els.find(e => e.offsetParent && /LOG IN BY PHONE NUMBER|номеру телефона/i.test(e.textContent || ''));
+                        if (el) el.click();
+                    }""")
+                    print("вход: клик по номеру (js)", flush=True)
+                except Exception as exc:
+                    print("вход: клик js fail", exc.__class__.__name__, flush=True)
                 wait_any(page, ["#sign-in-phone-number"], 15000)
 
             if not wait_any(page, ["#sign-in-phone-number"], 15000):
@@ -269,5 +274,6 @@ def login(ws, account_id):
         except Exception as exc:
             print("вход: бот", exc.__class__.__name__, flush=True)
         return True
+
 
 
