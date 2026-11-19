@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TWKS · панель аккаунтов</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- вход -->
+<div id="login" class="login hidden">
+  <form id="login-form" class="login-box">
+    <div class="brand">TWKS</div>
+    <p class="muted">Панель менеджера аккаунтов</p>
+    <input id="password" type="password" placeholder="Пароль" autocomplete="current-password" required>
+    <button type="submit">Войти</button>
+    <div id="login-error" class="error"></div>
+  </form>
+</div>
+
+<!-- панель -->
+<div id="app" class="app hidden">
+  <header class="topbar">
+    <div class="brand">TWKS</div>
+    <div class="slots" id="slots">
+      <span class="slots-label">Слоты</span>
+      <span id="slots-value">0/0</span>
+      <div class="dots" id="slots-dots"></div>
+    </div>
+    <div class="agent" id="agent">
+      <span class="dot"></span><span id="agent-text">агент офлайн</span>
+    </div>
+    <button id="logout" class="ghost">Выйти</button>
+  </header>
+
+  <main class="layout">
+    <section class="content">
+      <form id="upload" class="upload">
+        <div class="upload-row">
+          <label class="file">
+            <input type="file" id="zip" accept=".zip" required>
+            <span id="zip-name">Выбрать ZIP с tdata</span>
+          </label>
+          <button type="submit" id="upload-btn">Разобрать архив</button>
+        </div>
+        <textarea id="proxies" rows="3" placeholder="Прокси для этой партии, по одному в строке:&#10;host:port:user:pass"></textarea>
+        <div class="hint">Прокси привязываются к этой партии и используются только для проверки. Для входа в окно спросим отдельный.</div>
+      </form>
+
+      <div class="stats" id="stats"></div>
+      <div class="accounts" id="accounts">
+        <div class="empty">Пока пусто. Загрузи архив с tdata.</div>
+      </div>
+    </section>
+
+    <aside class="log-panel">
+      <div class="log-head">Лог</div>
+      <div class="log" id="log"></div>
+    </aside>
+  </main>
+</div>
+
+<!-- модалка ввода прокси -->
+<dialog id="proxy-modal" class="modal">
+  <form method="dialog" id="proxy-form">
+    <h3>Прокси для входа</h3>
+    <p class="muted">Один аккаунт — один IP. Для входа нужен липкий прокси, не ротационный.</p>
+    <textarea id="proxy-input" rows="3" placeholder="host:port:user:pass"></textarea>
+    <div class="modal-actions">
+      <button value="cancel" class="ghost">Отмена</button>
+      <button value="ok" id="proxy-ok">Открыть Web</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+.env
+data/
+tdata/
+shots/
+*.session
+*.session-journal
+*.zip
+__pycache__/
+.venv/
