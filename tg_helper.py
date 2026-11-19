@@ -1,8 +1,12 @@
-﻿import asyncio
+﻿"""Читает код входа из старой tdata через Telethon."""
+from __future__ import annotations
+
+import asyncio
 import io
 import os
 import re
 import zipfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import httpx
@@ -10,13 +14,14 @@ import httpx
 PANEL = os.getenv("TWKS_PANEL_URL", "http://127.0.0.1:8000").rstrip("/")
 TOKEN = os.getenv("TWKS_AGENT_TOKEN", "agent-secret")
 WORK = Path(os.getenv("TWKS_TDATA_DIR", str(Path(__file__).resolve().parent / "tdata")))
+
 CODE_RE = re.compile(r"(\d{5,6})")
 
 
 def download_tdata(account_id):
     folder = WORK / str(account_id)
     tdata = folder / "tdata"
-    if (tdata / "key_datas").exists():
+    if (tdata / "key_datas").exists() and any(folder.rglob("*.txt")):
         return tdata
     url = PANEL + "/api/agent/tdata/" + str(account_id)
     r = httpx.get(url, headers={"X-Agent-Token": TOKEN}, timeout=120)
@@ -47,45 +52,34 @@ async def phone_of(account_id):
         await client.disconnect()
 
 
-async def wait_code(account_id, timeout=180):
+async def wait_code(account_id, timeout=200):
     client = await build_client(account_id)
     try:
         me = await client.get_me()
         print("аккаунт:", me.first_name if me else "?", "| +" + (me.phone or ""), flush=True)
-        last_id = 0
-        try:
-            history = await client.get_messages(777000, limit=1)
-            if history:
-                last_id = history[0].id
-        except Exception:
-            pass
+        fresh_after = datetime.now(timezone.utc) - timedelta(seconds=20)
         waited = 0
-        seen = False
+        seen = set()
         while waited < timeout:
             await asyncio.sleep(1)
             waited += 1
             try:
-                msgs = await client.get_messages(777000, limit=5)
+                msgs = await client.get_messages(777000, limit=6)
             except Exception:
                 continue
             for msg in msgs:
+                if msg.id in seen:
+                    continue
+                when = getattr(msg, "date", None)
+                if when is not None and when < fresh_after:
+                    continue
+                seen.add(msg.id)
                 text = msg.message or ""
-                if text and not seen:
+                if text:
                     print("777000:", text[:90].replace(chr(10), " "), flush=True)
-                    seen = True
                 m = CODE_RE.search(text)
                 if m:
                     return m.group(1)
         return ""
     finally:
         await client.disconnect()
-
-
-if __name__ == "__main__":
-    import sys
-    account = int(sys.argv[1]) if len(sys.argv) > 1 else 1
-    print("скачиваю tdata аккаунта", account, flush=True)
-    print("телефон: +" + asyncio.run(phone_of(account)), flush=True)
-
-
-
