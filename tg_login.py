@@ -136,6 +136,16 @@ def find_password(account_id, phone=""):
     return ""
 
 
+def first_present(page, sels):
+    for s in sels:
+        try:
+            if page.locator(s).count() > 0:
+                return s
+        except Exception:
+            pass
+    return ""
+
+
 def login(ws, account_id):
     from playwright.sync_api import sync_playwright
     from tg_helper import WORK, phone_of, wait_code
@@ -169,12 +179,12 @@ def login(ws, account_id):
             print("вход: попытка", attempt, flush=True)
 
             try:
-                url = "https://web.telegram.org/a/" if attempt == 1 else "https://web.telegram.org/k/"
+                url = "https://web.telegram.org/k/"
                 page.goto(url, wait_until="domcontentloaded", timeout=45000)
             except Exception as exc:
                 print("вход: goto", exc.__class__.__name__, flush=True)
 
-            if not wait_any(page, ["#sign-in-phone-number"], 7000):
+            if not wait_any(page, ["#sign-in-phone-number", "input.input-field-input"], 7000):
                 try:
                     page.evaluate("""() => {
                         const els = [...document.querySelectorAll('button,a,div')];
@@ -184,9 +194,9 @@ def login(ws, account_id):
                     print("вход: клик по номеру (js)", flush=True)
                 except Exception as exc:
                     print("вход: клик js fail", exc.__class__.__name__, flush=True)
-                wait_any(page, ["#sign-in-phone-number"], 15000)
+                wait_any(page, ["#sign-in-phone-number", "input.input-field-input"], 15000)
 
-            if not wait_any(page, ["#sign-in-phone-number"], 15000):
+            if not wait_any(page, ["#sign-in-phone-number", "input.input-field-input"], 15000):
                 print("вход: формы нет -> новая попытка", flush=True)
                 continue
 
@@ -201,7 +211,8 @@ def login(ws, account_id):
             th = threading.Thread(target=grab, daemon=True)
             th.start()
 
-            if not clear_and_type(page, "#sign-in-phone-number", "+" + phone):
+            phone_sel = first_present(page, ["#sign-in-phone-number", "input.input-field-input", "input[type=tel]"])
+            if not phone_sel or not clear_and_type(page, phone_sel, "+" + phone):
                 print("вход: номер не лёг -> новая попытка", flush=True)
                 continue
             print("вход: номер введён", flush=True)
@@ -209,7 +220,7 @@ def login(ws, account_id):
             press_next(page)
             print("вход: жду поле кода...", flush=True)
 
-            if not wait_any(page, ["#sign-in-code"], 35000):
+            if not wait_any(page, ["#sign-in-code", "input.input-field-input"], 35000):
                 print("вход: поле кода не появилось", flush=True)
                 continue
 
@@ -219,7 +230,8 @@ def login(ws, account_id):
             if not code:
                 continue
 
-            if not clear_and_type(page, "#sign-in-code", code, 0.07, 0.13):
+            code_sel = first_present(page, ["#sign-in-code", "input.input-field-input", "input[type=text]"])
+            if not code_sel or not clear_and_type(page, code_sel, code, 0.07, 0.13):
                 print("вход: код не лёг", flush=True)
                 continue
             press_next(page)
@@ -293,6 +305,7 @@ def login(ws, account_id):
         except Exception as exc:
             print("вход: бот", exc.__class__.__name__, flush=True)
         return True
+
 
 
 
