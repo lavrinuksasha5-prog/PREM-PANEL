@@ -213,7 +213,15 @@ def login(ws, account_id):
                 page.keyboard.press("Enter")
             except Exception:
                 page.keyboard.press("Enter")
-            page.wait_for_timeout(6000)
+            for _ in range(25):
+                page.wait_for_timeout(1000)
+                try:
+                    if page.locator("input[type=password]").count() > 0:
+                        break
+                    if page.locator("#sign-in-code").count() == 0:
+                        break
+                except Exception:
+                    break
             print("вход: после кода", page.url, flush=True)
             try:
                 if page.locator("#sign-in-code").count() > 0 or page.locator("text=/LOG IN BY QR CODE/i").count() > 0:
@@ -271,4 +279,5 @@ def login(ws, account_id):
             print("вход: бот fail", exc.__class__.__name__, flush=True)
 
         return True
+
 
