@@ -165,7 +165,7 @@ def login(ws, account_id):
                 page.goto("https://web.telegram.org/a/", wait_until="domcontentloaded", timeout=60000)
             except Exception as exc:
                 print("вход: goto fail", exc.__class__.__name__, flush=True)
-            page.wait_for_timeout(3000)
+            wait_any(page, ["#sign-in-phone-number", "text=/LOG IN BY PHONE NUMBER/i"], 9000)
 
             if not wait_any(page, ["#sign-in-phone-number"], 6000):
                 try:
@@ -180,7 +180,7 @@ def login(ws, account_id):
 
             page.eval_on_selector("#sign-in-phone-number", "el => { el.focus(); }")
             page.wait_for_timeout(600)
-            if not type_verified(page, "#sign-in-phone-number", "+" + phone):
+            if not type_verified(page, "#sign-in-phone-number", "+" + phone, 0.06, 0.11):
                 print("вход: номер не принят -> перезагрузка", flush=True)
                 continue
             print("вход: номер набран", flush=True)
@@ -192,7 +192,7 @@ def login(ws, account_id):
                 page.keyboard.press("Enter")
 
             print("вход: жду поле кода...", flush=True)
-            if not wait_any(page, ["#sign-in-code"], 45000):
+            if not wait_any(page, ["#sign-in-code"], 30000):
                 print("вход: поле кода не появилось -> перезагрузка", flush=True)
                 continue
 
@@ -204,7 +204,7 @@ def login(ws, account_id):
                 continue
 
             page.wait_for_timeout(500)
-            if not type_verified(page, "#sign-in-code", code, 0.18, 0.30):
+            if not type_verified(page, "#sign-in-code", code, 0.07, 0.13):
                 print("вход: код не принят -> перезагрузка", flush=True)
                 continue
 
@@ -279,6 +279,7 @@ def login(ws, account_id):
             print("вход: бот fail", exc.__class__.__name__, flush=True)
 
         return True
+
 
 
 
