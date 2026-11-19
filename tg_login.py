@@ -146,6 +146,7 @@ def first_present(page, sels):
     return ""
 
 
+
 def login(ws, account_id):
     from playwright.sync_api import sync_playwright
     from tg_helper import WORK, phone_of, wait_code
@@ -167,7 +168,6 @@ def login(ws, account_id):
         return False
     print("вход: +%s" % phone, flush=True)
 
-    ok = False
     with sync_playwright() as pw:
         browser = pw.chromium.connect_over_cdp(ws)
         ctx = browser.contexts[0] if browser.contexts else browser.new_context()
@@ -179,25 +179,38 @@ def login(ws, account_id):
             print("вход: попытка", attempt, flush=True)
 
             try:
-                url = "https://web.telegram.org/k/"
-                page.goto(url, wait_until="domcontentloaded", timeout=45000)
+                page.goto("https://web.telegram.org/k/", wait_until="domcontentloaded", timeout=45000)
             except Exception as exc:
                 print("вход: goto", exc.__class__.__name__, flush=True)
 
-            if not wait_any(page, ["#sign-in-phone-number", "input.input-field-input"], 7000):
+            print("вход: жду загрузку...", flush=True)
+            for _ in range(40):
+                page.wait_for_timeout(500)
                 try:
-                    page.evaluate("""() => {
-                        const els = [...document.querySelectorAll('button,a,div')];
-                        const el = els.find(e => e.offsetParent && /LOG IN BY PHONE NUMBER|номеру телефона/i.test(e.textContent || ''));
-                        if (el) el.click();
-                    }""")
-                    print("вход: клик по номеру (js)", flush=True)
-                except Exception as exc:
-                    print("вход: клик js fail", exc.__class__.__name__, flush=True)
-                wait_any(page, ["#sign-in-phone-number", "input.input-field-input"], 15000)
+                    if page.locator("text=/LOG IN BY PHONE NUMBER/i").count() > 0:
+                        break
+                except Exception:
+                    pass
+            page.wait_for_timeout(1500)
 
-            if not wait_any(page, ["#sign-in-phone-number", "input.input-field-input"], 15000):
-                print("вход: формы нет -> новая попытка", flush=True)
+            for click_i in range(4):
+                if wait_any(page, ["#sign-in-phone-number"], 1500):
+                    break
+                try:
+                    loc = page.get_by_text("LOG IN BY PHONE NUMBER", exact=False).first
+                    bb = loc.bounding_box()
+                    if bb:
+                        page.mouse.click(bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2)
+                    else:
+                        loc.click(force=True, timeout=5000)
+                    print("вход: клик", click_i + 1, flush=True)
+                except Exception as exc:
+                    print("вход: клик fail", exc.__class__.__name__, flush=True)
+                if wait_any(page, ["#sign-in-phone-number"], 6000):
+                    break
+
+            if not wait_any(page, ["#sign-in-phone-number"], 15000):
+                print("вход: формы нет", flush=True)
                 continue
 
             box = {}
@@ -211,17 +224,15 @@ def login(ws, account_id):
             th = threading.Thread(target=grab, daemon=True)
             th.start()
 
-            phone_sel = first_present(page, ["#sign-in-phone-number", "input.input-field-input", "input[type=tel]"])
-            if not phone_sel or not clear_and_type(page, phone_sel, "+" + phone):
-                print("вход: номер не лёг -> новая попытка", flush=True)
+            if not clear_and_type(page, "#sign-in-phone-number", "+" + phone):
+                print("вход: номер не лёг", flush=True)
                 continue
             print("вход: номер введён", flush=True)
-
             press_next(page)
             print("вход: жду поле кода...", flush=True)
 
-            if not wait_any(page, ["#sign-in-code", "input.input-field-input"], 35000):
-                print("вход: поле кода не появилось", flush=True)
+            if not wait_any(page, ["#sign-in-code"], 35000):
+                print("вход: поля кода нет", flush=True)
                 continue
 
             th.join(timeout=120)
@@ -230,9 +241,7 @@ def login(ws, account_id):
             if not code:
                 continue
 
-            code_sel = first_present(page, ["#sign-in-code", "input.input-field-input", "input[type=text]"])
-            if not code_sel or not clear_and_type(page, code_sel, code, 0.07, 0.13):
-                print("вход: код не лёг", flush=True)
+            if not clear_and_type(page, "#sign-in-code", code, 0.07, 0.13):
                 continue
             press_next(page)
             print("вход: код отправлен", flush=True)
@@ -253,18 +262,14 @@ def login(ws, account_id):
                 pwd = find_password(account_id, phone)
                 print("вход: пароль найден:", bool(pwd), flush=True)
                 if pwd:
-                    done = False
-                    for sel in ["#sign-in-password", "input[type=password]", "input[name=password]"]:
+                    for sel in ["#sign-in-password", "input[type=password]"]:
                         if clear_and_type(page, sel, pwd, 0.05, 0.1):
-                            print("вход: пароль введён в", sel, flush=True)
+                            print("вход: пароль введён", flush=True)
                             press_next(page)
                             page.wait_for_timeout(6000)
-                            done = True
                             break
-                    if not done:
-                        print("вход: поле пароля не найдено", flush=True)
                 else:
-                    print("вход: ВПИШИ ПАРОЛЬ В ОКНЕ, жду до 3 минут", flush=True)
+                    print("вход: ВПИШИ ПАРОЛЬ, жду до 3 минут", flush=True)
                     w = 0
                     while w < 180:
                         page.wait_for_timeout(2000)
@@ -283,31 +288,19 @@ def login(ws, account_id):
                 pass
 
             print("вход: успешно", page.url, flush=True)
-            ok = True
-            break
+            try:
+                page.goto("https://web.telegram.org/k/#@PremiumBot", wait_until="domcontentloaded", timeout=45000)
+                page.wait_for_timeout(7000)
+                print("вход: PremiumBot", page.url, flush=True)
+                for pat in ["text=/^START$/i", "text=/^ЗАПУСТИТЬ$/i"]:
+                    try:
+                        page.locator(pat).first.click(timeout=5000)
+                        print("вход: START нажат", flush=True)
+                        break
+                    except Exception:
+                        continue
+            except Exception as exc:
+                print("вход: бот", exc.__class__.__name__, flush=True)
+            return True
 
-        if not ok:
-            print("вход: не удалось за 3 попытки", flush=True)
-            return False
-
-        try:
-            page.goto("https://web.telegram.org/k/#@PremiumBot", wait_until="domcontentloaded", timeout=45000)
-            wait_any(page, ["text=/Premium/i"], 15000)
-            page.wait_for_timeout(2500)
-            print("вход: PremiumBot", page.url, flush=True)
-            for pat in ["text=/^START$/i", "text=/^ЗАПУСТИТЬ$/i"]:
-                try:
-                    page.locator(pat).first.click(timeout=5000)
-                    print("вход: START нажат", flush=True)
-                    break
-                except Exception:
-                    continue
-        except Exception as exc:
-            print("вход: бот", exc.__class__.__name__, flush=True)
-        return True
-
-
-
-
-
-
+        return False
