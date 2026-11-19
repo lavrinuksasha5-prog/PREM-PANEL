@@ -194,7 +194,7 @@ def login(ws, account_id):
             page.wait_for_timeout(1500)
 
             for click_i in range(4):
-                if wait_any(page, ["#sign-in-phone-number"], 1500):
+                if wait_any(page, ["#sign-in-phone-number", "input.input-field-input", "input[type=tel]"], 1500):
                     break
                 try:
                     loc = page.get_by_text("LOG IN BY PHONE NUMBER", exact=False).first
@@ -206,10 +206,10 @@ def login(ws, account_id):
                     print("вход: клик", click_i + 1, flush=True)
                 except Exception as exc:
                     print("вход: клик fail", exc.__class__.__name__, flush=True)
-                if wait_any(page, ["#sign-in-phone-number"], 6000):
+                if wait_any(page, ["#sign-in-phone-number", "input.input-field-input", "input[type=tel]"], 6000):
                     break
 
-            if not wait_any(page, ["#sign-in-phone-number"], 15000):
+            if not wait_any(page, ["#sign-in-phone-number", "input.input-field-input", "input[type=tel]"], 15000):
                 print("вход: формы нет", flush=True)
                 continue
 
@@ -224,14 +224,15 @@ def login(ws, account_id):
             th = threading.Thread(target=grab, daemon=True)
             th.start()
 
-            if not clear_and_type(page, "#sign-in-phone-number", "+" + phone):
+            phone_sel = first_present(page, ["#sign-in-phone-number", "input.input-field-input", "input[type=tel]"])
+            if not phone_sel or not clear_and_type(page, phone_sel, "+" + phone):
                 print("вход: номер не лёг", flush=True)
                 continue
             print("вход: номер введён", flush=True)
             press_next(page)
             print("вход: жду поле кода...", flush=True)
 
-            if not wait_any(page, ["#sign-in-code"], 35000):
+            if not wait_any(page, ["#sign-in-code", "input.input-field-input", "input[type=text]"], 35000):
                 print("вход: поля кода нет", flush=True)
                 continue
 
@@ -241,7 +242,8 @@ def login(ws, account_id):
             if not code:
                 continue
 
-            if not clear_and_type(page, "#sign-in-code", code, 0.07, 0.13):
+            code_sel = first_present(page, ["#sign-in-code", "input.input-field-input", "input[type=text]"])
+            if not code_sel or not clear_and_type(page, code_sel, code, 0.07, 0.13):
                 continue
             press_next(page)
             print("вход: код отправлен", flush=True)
@@ -304,3 +306,4 @@ def login(ws, account_id):
             return True
 
         return False
+
