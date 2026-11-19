@@ -30,6 +30,25 @@ def alive_page(ctx, old):
             return old
     except Exception:
         pass
+    pages = []
+    try:
+        pages = [p for p in ctx.pages if not p.is_closed()]
+    except Exception:
+        pages = []
+    tg = [p for p in pages if "web.telegram.org" in (p.url or "")]
+    keep = tg[0] if tg else None
+    for p in pages:
+        if p is not keep:
+            try:
+                p.close()
+            except Exception:
+                pass
+    if keep is not None:
+        try:
+            keep.bring_to_front()
+        except Exception:
+            pass
+        return keep
     page = ctx.new_page()
     try:
         page.bring_to_front()
@@ -274,6 +293,7 @@ def login(ws, account_id):
         except Exception as exc:
             print("вход: бот", exc.__class__.__name__, flush=True)
         return True
+
 
 
 
