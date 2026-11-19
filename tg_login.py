@@ -225,7 +225,21 @@ def login(ws, account_id):
             th.start()
 
             phone_sel = first_present(page, ["#sign-in-phone-number", "input.input-field-input", "input[type=tel]"])
-            if not phone_sel or not clear_and_type(page, phone_sel, "+" + phone):
+            if not phone_sel:
+                print("вход: поле номера не найдено", flush=True)
+                continue
+            cur = ""
+            try:
+                cur = page.input_value(phone_sel) or ""
+            except Exception:
+                pass
+            pref = re.sub(r"\D", "", cur)
+            if pref and phone.startswith(pref):
+                digits = phone[len(pref):]
+            else:
+                digits = "+" + phone
+            print("вход: печатаю", digits, flush=True)
+            if not type_human(page, phone_sel, digits):
                 print("вход: номер не лёг", flush=True)
                 continue
             print("вход: номер введён", flush=True)
@@ -305,5 +319,24 @@ def login(ws, account_id):
                 print("вход: бот", exc.__class__.__name__, flush=True)
             return True
 
+        return False
+
+
+
+def type_human(page, sel, text, lo=0.09, hi=0.18):
+    try:
+        el = page.locator(sel).first
+        el.wait_for(state="visible", timeout=15000)
+        el.click()
+        page.wait_for_timeout(300)
+        page.keyboard.press("End")
+        for ch in str(text):
+            page.keyboard.type(ch)
+            time.sleep(random.uniform(lo, hi))
+        page.wait_for_timeout(500)
+        got = (page.input_value(sel) or "").replace(" ", "")
+        return str(text) in got
+    except Exception as exc:
+        print("ввод fail:", exc.__class__.__name__, flush=True)
         return False
 
