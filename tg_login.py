@@ -187,7 +187,7 @@ def login(ws, account_id):
 
             page.wait_for_timeout(700)
             try:
-                page.locator("button.btn-primary").first.click(timeout=10000)
+                page.keyboard.press("Enter")
             except Exception:
                 page.keyboard.press("Enter")
 
@@ -204,17 +204,23 @@ def login(ws, account_id):
                 continue
 
             page.wait_for_timeout(500)
-            if not type_verified(page, "#sign-in-code", code):
+            if not type_verified(page, "#sign-in-code", code, 0.18, 0.30):
                 print("вход: код не принят -> перезагрузка", flush=True)
                 continue
 
             page.wait_for_timeout(700)
             try:
-                page.locator("button.btn-primary").first.click(timeout=10000)
+                page.keyboard.press("Enter")
             except Exception:
                 page.keyboard.press("Enter")
             page.wait_for_timeout(6000)
             print("вход: после кода", page.url, flush=True)
+            try:
+                if page.locator("#sign-in-code").count() > 0 or page.locator("text=/LOG IN BY QR CODE/i").count() > 0:
+                    print("вход: Telegram не принял код -> перезагрузка", flush=True)
+                    continue
+            except Exception:
+                pass
             ok = True
             break
 
@@ -229,7 +235,7 @@ def login(ws, account_id):
                 if type_verified(page, "input[type=password]", pwd):
                     page.wait_for_timeout(500)
                     try:
-                        page.locator("button.btn-primary").first.click(timeout=10000)
+                        page.keyboard.press("Enter")
                     except Exception:
                         page.keyboard.press("Enter")
                     page.wait_for_timeout(7000)
@@ -265,3 +271,4 @@ def login(ws, account_id):
             print("вход: бот fail", exc.__class__.__name__, flush=True)
 
         return True
+
