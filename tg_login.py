@@ -47,8 +47,9 @@ def type_verified(page, selector, value, lo=0.08, hi=0.15):
             print("вход: фокус не там, а в", aid or "?", flush=True)
             page.wait_for_timeout(800)
             continue
-        page.keyboard.press("Control+A")
-        page.keyboard.press("Delete")
+        for _ in range(30):
+            page.keyboard.press("Backspace")
+            time.sleep(0.02)
         for ch in want:
             page.keyboard.type(ch)
             time.sleep(random.uniform(lo, hi))
@@ -279,6 +280,7 @@ def login(ws, account_id):
             print("вход: бот fail", exc.__class__.__name__, flush=True)
 
         return True
+
 
 
 
